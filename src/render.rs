@@ -3,76 +3,31 @@ use crate::wordnet::Lookup;
 pub const DEFAULT_EXAMPLE_LIMIT: usize = 2;
 
 pub struct RenderOptions {
-    pub color: bool,
     pub limit: Option<usize>,
     pub width: usize,
 }
 
 impl RenderOptions {
-    pub fn new(color: bool, limit: Option<usize>) -> Self {
+    pub fn new(limit: Option<usize>) -> Self {
         Self {
-            color,
             limit,
             width: terminal_width().clamp(48, 100),
         }
     }
 }
 
-#[derive(Clone, Copy)]
-struct Style {
-    enabled: bool,
-}
-
-impl Style {
-    fn paint(self, code: &str, text: &str) -> String {
-        if self.enabled {
-            format!("\x1b[{code}m{text}\x1b[0m")
-        } else {
-            text.to_string()
-        }
-    }
-
-    fn bold(self, text: &str) -> String {
-        self.paint("1", text)
-    }
-
-    fn dim(self, text: &str) -> String {
-        self.paint("2", text)
-    }
-
-    fn italic_dim(self, text: &str) -> String {
-        self.paint("2;3", text)
-    }
-
-    fn cyan(self, text: &str) -> String {
-        self.paint("36", text)
-    }
-
-    fn bold_cyan(self, text: &str) -> String {
-        self.paint("1;36", text)
-    }
-
-    fn yellow(self, text: &str) -> String {
-        self.paint("33", text)
-    }
-}
-
 pub fn render_lookup(lookup: &Lookup, options: &RenderOptions) -> String {
-    let style = Style {
-        enabled: options.color,
-    };
-
     if !lookup.found {
-        return render_not_found(lookup, options);
+        return render_not_found(lookup);
     }
 
     let head = lookup.matched.as_deref().unwrap_or(&lookup.query);
     let mut output = String::new();
-    output.push_str(&style.bold_cyan(head));
+    output.push_str(head);
 
     if let Some(from) = &lookup.resolved_from {
         output.push_str("  ");
-        output.push_str(&style.dim(&format!("(from {from})")));
+        output.push_str(&format!("(from {from})"));
     }
     output.push('\n');
 
@@ -84,7 +39,7 @@ pub fn render_lookup(lookup: &Lookup, options: &RenderOptions) -> String {
         first_group = false;
 
         output.push_str("  ");
-        output.push_str(&style.yellow(group.part_of_speech));
+        output.push_str(group.part_of_speech);
         output.push('\n');
 
         let shown = match options.limit {
@@ -100,18 +55,17 @@ pub fn render_lookup(lookup: &Lookup, options: &RenderOptions) -> String {
                 &sense.examples,
                 &sense.synonyms,
                 options,
-                style,
             );
         }
 
         if shown < group.senses.len() {
             let omitted = group.senses.len() - shown;
             output.push_str("      ");
-            output.push_str(&style.dim(&format!(
+            output.push_str(&format!(
                 "… {omitted} more {} sense{} · use --all",
                 group.part_of_speech,
                 if omitted == 1 { "" } else { "s" }
-            )));
+            ));
             output.push('\n');
         }
     }
@@ -126,7 +80,6 @@ fn render_sense(
     examples: &[String],
     synonyms: &[String],
     options: &RenderOptions,
-    style: Style,
 ) {
     let number = format!("{number}.");
     let hanging = 4 + number.len() + 1;
@@ -135,7 +88,7 @@ fn render_sense(
     for (line_index, line) in textwrap::wrap(definition, available).iter().enumerate() {
         if line_index == 0 {
             output.push_str("    ");
-            output.push_str(&style.dim(&number));
+            output.push_str(&number);
             output.push(' ');
         } else {
             output.push_str(&" ".repeat(hanging));
@@ -150,10 +103,7 @@ fn render_sense(
         DEFAULT_EXAMPLE_LIMIT
     };
     for example in examples.iter().take(example_limit) {
-        let text = format!("“{example}”");
-        push_wrapped(output, &text, 6, options.width, |line| {
-            style.italic_dim(line)
-        });
+        push_wrapped(output, &format!("“{example}”"), 6, options.width);
     }
 
     if !synonyms.is_empty() {
@@ -164,45 +114,36 @@ fn render_sense(
         for (line_index, line) in textwrap::wrap(&joined, available).iter().enumerate() {
             if line_index == 0 {
                 output.push_str(&" ".repeat(indent));
-                output.push_str(&style.dim(label));
+                output.push_str(label);
             } else {
                 output.push_str(&" ".repeat(indent + label.len()));
             }
-            output.push_str(&style.cyan(line));
+            output.push_str(line);
             output.push('\n');
         }
     }
 }
 
-fn push_wrapped<F>(output: &mut String, text: &str, indent: usize, width: usize, style: F)
-where
-    F: Fn(&str) -> String,
-{
+fn push_wrapped(output: &mut String, text: &str, indent: usize, width: usize) {
     let available = width.saturating_sub(indent).max(20);
     for line in textwrap::wrap(text, available) {
         output.push_str(&" ".repeat(indent));
-        output.push_str(&style(&line));
+        output.push_str(&line);
         output.push('\n');
     }
 }
 
-fn render_not_found(lookup: &Lookup, options: &RenderOptions) -> String {
-    let style = Style {
-        enabled: options.color,
-    };
+fn render_not_found(lookup: &Lookup) -> String {
     let query = lookup.query.trim();
     let query = if query.is_empty() { "(nothing)" } else { query };
 
     let mut output = String::new();
-    output.push_str(&style.yellow("No entry for "));
-    output.push_str(&style.bold(&format!("“{query}”")));
-    output.push_str(".\n");
+    output.push_str(&format!("No entry for “{query}”.\n"));
 
     if !lookup.suggestions.is_empty() {
         output.push('\n');
-        output.push_str("  ");
-        output.push_str(&style.dim("Did you mean: "));
-        output.push_str(&style.cyan(&lookup.suggestions.join(", ")));
+        output.push_str("  Did you mean: ");
+        output.push_str(&lookup.suggestions.join(", "));
         output.push('\n');
     }
 
@@ -248,9 +189,8 @@ mod tests {
     }
 
     #[test]
-    fn renders_definitions_without_color() {
+    fn renders_plain_text_definitions() {
         let options = RenderOptions {
-            color: false,
             limit: Some(1),
             width: 60,
         };
@@ -273,7 +213,6 @@ mod tests {
             suggestions: vec!["serendipity".to_string()],
         };
         let options = RenderOptions {
-            color: false,
             limit: None,
             width: 80,
         };

@@ -1,11 +1,10 @@
 mod render;
 mod wordnet;
 
-use std::env;
-use std::io::{self, BufRead, IsTerminal, Read, Write};
+use std::io::{self, IsTerminal, Read};
 use std::process::ExitCode;
 
-use clap::Parser;
+use clap::{CommandFactory, Parser};
 use render::{DEFAULT_EXAMPLE_LIMIT, RenderOptions, render_lookup};
 use serde_json::json;
 use wordnet::{Lookup, WordNet};
@@ -18,8 +17,9 @@ const DEFAULT_LIMIT: usize = 5;
 #[command(
     name = "dict-lookup",
     version,
+    color = clap::ColorChoice::Never,
     about = "Look up word meanings offline — no API keys, no network, no rate limits.",
-    after_help = "EXAMPLES:\n  dict-lookup serendipity\n  dict-lookup \"ice cream\"\n  dict-lookup --all run\n  dict-lookup --json ephemeral\n  dict-lookup                          interactive mode\n\nDATA:\n  WordNet 3.0 is bundled with the binary, so lookups work offline."
+    after_help = "EXAMPLES:\n  dict-lookup serendipity\n  dict-lookup \"ice cream\"\n  dict-lookup --all run\n  dict-lookup --json ephemeral\n  printf 'hello\\nworld\\n' | dict-lookup\n\nDATA:\n  WordNet 3.0 is bundled with the binary, so lookups work offline."
 )]
 struct Cli {
     /// Word or phrase to look up
@@ -43,14 +43,6 @@ struct Cli {
     #[arg(long)]
     json: bool,
 
-    /// Start interactive mode
-    #[arg(short, long, conflicts_with = "word")]
-    interactive: bool,
-
-    /// Disable colored output
-    #[arg(long)]
-    no_color: bool,
-
     /// Print license information and exit
     #[arg(long)]
     license: bool,
@@ -64,24 +56,19 @@ fn main() -> ExitCode {
         return ExitCode::SUCCESS;
     }
 
-    let color = color_enabled(cli.no_color);
     let limit = if cli.all {
         None
     } else {
         Some(cli.limit.unwrap_or(DEFAULT_LIMIT))
     };
-    let options = RenderOptions::new(color, limit);
+    let options = RenderOptions::new(limit);
     let dictionary = WordNet::new();
-    let stdin_is_tty = io::stdin().is_terminal();
 
-    if cli.interactive || (cli.word.is_none() && stdin_is_tty) {
-        return match run_interactive(&dictionary, options, cli.json) {
-            Ok(()) => ExitCode::SUCCESS,
-            Err(error) => {
-                eprintln!("dict-lookup: {error}");
-                ExitCode::from(2)
-            }
-        };
+    if cli.word.is_none() && io::stdin().is_terminal() {
+        let mut command = Cli::command();
+        let _ = command.print_help();
+        println!();
+        return ExitCode::from(2);
     }
 
     let words = match cli.word {
@@ -139,138 +126,6 @@ fn main() -> ExitCode {
     }
 }
 
-fn run_interactive(
-    dictionary: &WordNet,
-    mut options: RenderOptions,
-    json_output: bool,
-) -> io::Result<()> {
-    if !json_output {
-        println!();
-        println!("{}", paint(options.color, "1;36", "dict-lookup"));
-        println!(
-            "{}",
-            paint(
-                options.color,
-                "2",
-                "Offline dictionary · WordNet 3.0 · 155,000+ words"
-            )
-        );
-        println!(
-            "{}",
-            paint(
-                options.color,
-                "2",
-                "Type a word or phrase. :help for commands, :q to quit."
-            )
-        );
-        println!();
-    }
-
-    let stdin = io::stdin();
-    let mut input = stdin.lock();
-    let mut line = String::new();
-
-    loop {
-        if !json_output {
-            print!("{}", paint(options.color, "1;36", "› "));
-            io::stdout().flush()?;
-        }
-
-        line.clear();
-        if input.read_line(&mut line)? == 0 {
-            if !json_output {
-                println!();
-            }
-            break;
-        }
-
-        let query = line.trim();
-        if query.is_empty() {
-            continue;
-        }
-
-        match query {
-            ":q" | ":quit" | "quit" | "exit" => {
-                if !json_output {
-                    println!();
-                }
-                break;
-            }
-            ":help" => {
-                print_interactive_help(options.color);
-                continue;
-            }
-            ":license" => {
-                print_license();
-                continue;
-            }
-            ":clear" => {
-                print!("\x1b[2J\x1b[H");
-                io::stdout().flush()?;
-                continue;
-            }
-            ":all" => {
-                options.limit = if options.limit.is_some() {
-                    None
-                } else {
-                    Some(DEFAULT_LIMIT)
-                };
-                let state = if options.limit.is_some() {
-                    format!("showing up to {DEFAULT_LIMIT} senses per part of speech")
-                } else {
-                    "showing every sense".to_string()
-                };
-                println!("{}", paint(options.color, "2", &state));
-                continue;
-            }
-            command if command.starts_with(':') => {
-                println!(
-                    "{}",
-                    paint(
-                        options.color,
-                        "33",
-                        "Unknown command. Type :help for available commands."
-                    )
-                );
-                continue;
-            }
-            _ => {}
-        }
-
-        let lookup = dictionary.lookup(query);
-        if json_output {
-            println!(
-                "{}",
-                serde_json::to_string(&lookup_json(&limited_lookup(&lookup, options.limit)))
-                    .expect("JSON serialization failed")
-            );
-        } else {
-            print!("{}", render_lookup(&lookup, &options));
-            println!();
-        }
-    }
-
-    Ok(())
-}
-
-fn print_interactive_help(color: bool) {
-    let heading = |text: &str| paint(color, "1", text);
-    let command = |text: &str| paint(color, "36", text);
-
-    println!();
-    println!("{}", heading("Commands"));
-    println!("  {}          look up a word or phrase", command("<word>"));
-    println!(
-        "  {}           toggle all senses and examples",
-        command(":all")
-    );
-    println!("  {}          show this help", command(":help"));
-    println!("  {}       show license information", command(":license"));
-    println!("  {}         clear the screen", command(":clear"));
-    println!("  {}     quit", command(":q, :quit"));
-    println!();
-}
-
 fn parse_limit(value: &str) -> Result<usize, String> {
     let limit = value
         .parse::<usize>()
@@ -308,27 +163,6 @@ fn limited_lookup(lookup: &Lookup, limit: Option<usize>) -> Lookup {
 
 fn lookup_json(lookup: &Lookup) -> serde_json::Value {
     serde_json::to_value(lookup).expect("lookup should serialize")
-}
-
-fn color_enabled(no_color: bool) -> bool {
-    if no_color {
-        return false;
-    }
-    if env::var_os("NO_COLOR").is_some() {
-        return false;
-    }
-    if env::var("CLICOLOR").is_ok_and(|value| value == "0") {
-        return false;
-    }
-    io::stdout().is_terminal()
-}
-
-fn paint(enabled: bool, code: &str, text: &str) -> String {
-    if enabled {
-        format!("\x1b[{code}m{text}\x1b[0m")
-    } else {
-        text.to_string()
-    }
 }
 
 fn print_license() {

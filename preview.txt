@@ -13,5 +13,4 @@ $ dict-lookup run --limit 2
 .. “If you see this man, run!”
 .. synonyms: scat, scarper, turn tail, lam, run away, hightail it, bunk
 
-$ dict-lookup
-.. Offline dictionary · WordNet 3.0 · Type a word, or :q to quit.
+.. 155,000 words · no API keys · no network · no rate limits
