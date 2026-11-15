@@ -26,7 +26,7 @@ enum ColorMode {
     name = "dict-lookup",
     version,
     color = clap::ColorChoice::Never,
-    about = "Look up word meanings offline — no API keys, no network, no rate limits."
+    about = "An offline dictionary in the terminal"
 )]
 struct Cli {
     /// Word or phrase to look up

@@ -1,6 +1,6 @@
 # dict-lookup
 
-Offline dictionary in the terminal.
+An offline dictionary in the terminal
 
 ![dict-lookup in a terminal](preview.png)
 
