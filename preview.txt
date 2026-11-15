@@ -1,0 +1,17 @@
+$ dict-lookup serendipity
+## serendipity
+.. noun
+1. good luck in making unexpected and fortunate discoveries
+
+$ dict-lookup run --limit 2
+## run
+.. verb
+1. move fast by using one's feet, with one foot off the ground at any given time
+.. “Don't run--you'll be out of breath”
+.. “The children ran to the store”
+2. flee; take to one's heels; cut and run
+.. “If you see this man, run!”
+.. synonyms: scat, scarper, turn tail, lam, run away, hightail it, bunk
+
+$ dict-lookup
+.. Offline dictionary · WordNet 3.0 · Type a word, or :q to quit.
