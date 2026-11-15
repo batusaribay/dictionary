@@ -34,10 +34,9 @@ private.
    contractions (`ran` → `run`, `studies` → `study`, `don't` → `do`).
 6. Each synset is parsed into a definition, examples, and synonyms. Senses are
    grouped by part of speech, with the most common part of speech first.
-7. Output wraps to the terminal width and uses the terminal's standard ANSI
-   palette, so colors follow the active theme. It falls back to plain text when
-   piped and supports JSON for scripts. Nothing is fetched, cached, or sent
-   anywhere.
+7. Output wraps to the terminal width and uses white for primary text and dim
+   grey for secondary text. It falls back to plain text when piped and supports
+   JSON for scripts. Nothing is fetched, cached, or sent anywhere.
 
 ## Usage
 
@@ -58,10 +57,9 @@ By default, the text output shows five senses per part of speech and two
 examples per sense. `--all` removes both limits. `--json` respects `--limit`.
 
 Color defaults to `auto`: enabled on a terminal, disabled when piped, and
-disabled by `NO_COLOR`, `TERM=dumb`, or `CLICOLOR=0`. It uses the standard
-16-color ANSI palette, so the exact hues come from your terminal theme. The
-headword, each part of speech, examples, and synonyms use different styles.
-JSON output is never colored.
+disabled by `NO_COLOR`, `TERM=dumb`, or `CLICOLOR=0`. It uses only two tones:
+white for the headword and definitions, and dim grey for sense numbers, part of
+speech labels, examples, synonyms, and hints. JSON output is never colored.
 
 When stdin is not a terminal, each non-empty line is treated as one lookup, so
 word lists can be piped in.

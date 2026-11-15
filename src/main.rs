@@ -25,9 +25,8 @@ enum ColorMode {
 #[command(
     name = "dict-lookup",
     version,
-    color = clap::ColorChoice::Auto,
-    about = "Look up word meanings offline — no API keys, no network, no rate limits.",
-    after_help = "EXAMPLES:\n  dict-lookup serendipity\n  dict-lookup \"ice cream\"\n  dict-lookup --all run\n  dict-lookup --json ephemeral\n  printf 'hello\\nworld\\n' | dict-lookup\n\nDATA:\n  WordNet 3.0 is bundled with the binary, so lookups work offline."
+    color = clap::ColorChoice::Never,
+    about = "Look up word meanings offline — no API keys, no network, no rate limits."
 )]
 struct Cli {
     /// Word or phrase to look up

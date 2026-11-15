@@ -32,42 +32,12 @@ impl Style {
         }
     }
 
-    fn bold(self, text: &str) -> String {
-        self.paint("1", text)
-    }
-
-    fn bold_underline(self, text: &str) -> String {
-        self.paint("1;4", text)
+    fn bold_white(self, text: &str) -> String {
+        self.paint("1;97", text)
     }
 
     fn dim(self, text: &str) -> String {
         self.paint("2", text)
-    }
-
-    fn italic_dim(self, text: &str) -> String {
-        self.paint("2;3", text)
-    }
-
-    fn cyan(self, text: &str) -> String {
-        self.paint("36", text)
-    }
-
-    fn green(self, text: &str) -> String {
-        self.paint("32", text)
-    }
-
-    fn yellow(self, text: &str) -> String {
-        self.paint("33", text)
-    }
-}
-
-fn part_of_speech_style(part_of_speech: &str) -> &'static str {
-    match part_of_speech {
-        "noun" => "1;36",
-        "verb" => "1;32",
-        "adjective" => "1;33",
-        "adverb" => "1;35",
-        _ => "1",
     }
 }
 
@@ -82,7 +52,7 @@ pub fn render_lookup(lookup: &Lookup, options: &RenderOptions) -> String {
 
     let head = lookup.matched.as_deref().unwrap_or(&lookup.query);
     let mut output = String::new();
-    output.push_str(&style.bold_underline(head));
+    output.push_str(&style.bold_white(head));
 
     if let Some(from) = &lookup.resolved_from {
         output.push_str("  ");
@@ -98,10 +68,7 @@ pub fn render_lookup(lookup: &Lookup, options: &RenderOptions) -> String {
         first_group = false;
 
         output.push_str("  ");
-        output.push_str(&style.paint(
-            part_of_speech_style(group.part_of_speech),
-            group.part_of_speech,
-        ));
+        output.push_str(&style.dim(group.part_of_speech));
         output.push('\n');
 
         let shown = match options.limit {
@@ -172,7 +139,7 @@ fn render_sense(
             &format!("“{example}”"),
             6,
             options.width,
-            |line| style.italic_dim(line),
+            |line| style.dim(line),
         );
     }
 
@@ -188,7 +155,7 @@ fn render_sense(
             } else {
                 output.push_str(&" ".repeat(indent + label.len()));
             }
-            output.push_str(&style.green(line));
+            output.push_str(&style.dim(line));
             output.push('\n');
         }
     }
@@ -211,15 +178,15 @@ fn render_not_found(lookup: &Lookup, style: Style) -> String {
     let query = if query.is_empty() { "(nothing)" } else { query };
 
     let mut output = String::new();
-    output.push_str(&style.yellow("No entry for "));
-    output.push_str(&style.bold(&format!("“{query}”")));
-    output.push_str(".\n");
+    output.push_str(&style.bold_white(&format!("No entry for “{query}”.")));
+    output.push('\n');
 
     if !lookup.suggestions.is_empty() {
         output.push('\n');
-        output.push_str("  ");
-        output.push_str(&style.dim("Did you mean: "));
-        output.push_str(&style.cyan(&lookup.suggestions.join(", ")));
+        output.push_str(&style.dim(&format!(
+            "  Did you mean: {}",
+            lookup.suggestions.join(", ")
+        )));
         output.push('\n');
     }
 
@@ -300,16 +267,18 @@ mod tests {
     }
 
     #[test]
-    fn uses_theme_palette_ansi_colors_when_enabled() {
+    fn uses_white_and_grey_when_enabled() {
         let options = RenderOptions {
             color: true,
             limit: Some(1),
             width: 60,
         };
         let rendered = render_lookup(&sample_lookup(), &options);
-        assert!(rendered.contains("\x1b[1;4mtest\x1b[0m"));
-        assert!(rendered.contains("\x1b[1;36mnoun\x1b[0m"));
-        assert!(rendered.contains("\x1b[2;3m“the test was successful”\x1b[0m"));
-        assert!(rendered.contains("\x1b[32mtrial, check\x1b[0m"));
+        assert!(rendered.contains("\x1b[1;97mtest\x1b[0m"));
+        assert!(rendered.contains("\x1b[2mnoun\x1b[0m"));
+        assert!(rendered.contains("\x1b[2m“the test was successful”\x1b[0m"));
+        assert!(rendered.contains("\x1b[2mtrial, check\x1b[0m"));
+        assert!(!rendered.contains("\x1b[3"));
+        assert!(!rendered.contains("\x1b[32"));
     }
 }
