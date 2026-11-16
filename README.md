@@ -1,20 +1,8 @@
 # dictionary
 
+An offline dictionary in the terminal.
+
 ![dictionary in a terminal](preview.png)
-
-## What it is
-
-A single Rust binary that looks up English words and phrases using Princeton's
-WordNet 3.0. It covers about 155,000 words across nouns, verbs, adjectives, and
-adverbs, and works the same on a plane, over SSH, or with the network unplugged.
-
-## Why this exists
-
-A dictionary is reference data. It should not need a key, a quota, a login, or
-a round trip to a server before it can tell you what a word means. The free
-dictionary APIs that exist are useful, but they rate-limit, change, and fail
-when the network does. A terminal lookup should be immediate, scriptable, and
-private.
 
 ## How it works
 
