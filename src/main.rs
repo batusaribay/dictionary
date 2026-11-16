@@ -1,11 +1,10 @@
 mod render;
 mod wordnet;
 
-use std::env;
 use std::io::{self, IsTerminal, Read};
 use std::process::ExitCode;
 
-use clap::{CommandFactory, Parser, ValueEnum};
+use clap::{CommandFactory, Parser};
 use render::{DEFAULT_EXAMPLE_LIMIT, RenderOptions, render_lookup};
 use serde_json::json;
 use wordnet::{Lookup, WordNet};
@@ -13,13 +12,6 @@ use wordnet::{Lookup, WordNet};
 const PROJECT_LICENSE: &str = include_str!("../LICENSE");
 const WORDNET_LICENSE: &str = include_str!("../assets/wordnet/LICENSE");
 const DEFAULT_LIMIT: usize = 5;
-
-#[derive(Clone, Copy, Debug, ValueEnum)]
-enum ColorMode {
-    Auto,
-    Always,
-    Never,
-}
 
 #[derive(Debug, Parser)]
 #[command(
@@ -32,10 +24,6 @@ struct Cli {
     /// Word or phrase to look up
     #[arg(value_name = "WORD")]
     word: Option<String>,
-
-    /// When to use color: auto, always, or never
-    #[arg(long, value_enum, default_value = "auto", value_name = "WHEN")]
-    color: ColorMode,
 
     /// Show every sense and example instead of the first 5 per part of speech
     #[arg(short = 'a', long, conflicts_with = "limit")]
@@ -72,7 +60,7 @@ fn main() -> ExitCode {
     } else {
         Some(cli.limit.unwrap_or(DEFAULT_LIMIT))
     };
-    let options = RenderOptions::new(color_enabled(cli.color), limit);
+    let options = RenderOptions::new(limit);
     let dictionary = WordNet::new();
 
     if cli.word.is_none() && io::stdin().is_terminal() {
@@ -134,25 +122,6 @@ fn main() -> ExitCode {
         ExitCode::SUCCESS
     } else {
         ExitCode::from(1)
-    }
-}
-
-fn color_enabled(mode: ColorMode) -> bool {
-    match mode {
-        ColorMode::Always => true,
-        ColorMode::Never => false,
-        ColorMode::Auto => {
-            if env::var_os("NO_COLOR").is_some()
-                || env::var("TERM").is_ok_and(|term| term.eq_ignore_ascii_case("dumb"))
-                || env::var("CLICOLOR").is_ok_and(|value| value == "0")
-            {
-                return false;
-            }
-            if env::var("CLICOLOR_FORCE").is_ok_and(|value| value != "0") {
-                return true;
-            }
-            io::stdout().is_terminal()
-        }
     }
 }
 
