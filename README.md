@@ -1,8 +1,6 @@
-# dict-lookup
+# dictionary
 
-An offline dictionary in the terminal
-
-![dict-lookup in a terminal](preview.png)
+![dictionary in a terminal](preview.png)
 
 ## What it is
 
@@ -44,14 +42,14 @@ private.
 
 | Command | Action |
 | --- | --- |
-| `dict-lookup <word>` | Look up a word or quoted phrase. |
-| `dict-lookup "ice cream"` | Look up a multi-word phrase. |
-| `dict-lookup --all run` | Show every sense and example. |
-| `dict-lookup --limit 2 run` | Show at most two senses per part of speech. |
-| `dict-lookup --json ephemeral` | Print machine-readable JSON. |
-| `dict-lookup --color never word` | Disable color. |
-| `dict-lookup --color always word` | Force color even when piped. |
-| `dict-lookup --license` | Print the MIT and WordNet licenses. |
+| `dictionary <word>` | Look up a word or quoted phrase. |
+| `dictionary "ice cream"` | Look up a multi-word phrase. |
+| `dictionary --all run` | Show every sense and example. |
+| `dictionary --limit 2 run` | Show at most two senses per part of speech. |
+| `dictionary --json ephemeral` | Print machine-readable JSON. |
+| `dictionary --color never word` | Disable color. |
+| `dictionary --color always word` | Force color even when piped. |
+| `dictionary --license` | Print the MIT and WordNet licenses. |
 
 By default, the text output shows five senses per part of speech and two
 examples per sense. `--all` removes both limits. `--json` respects `--limit`.
@@ -67,14 +65,14 @@ word lists can be piped in.
 ### Examples
 
 ```bash
-dict-lookup serendipity
-dict-lookup "ice cream"
-dict-lookup ran
-dict-lookup "don't"
-dict-lookup --all run
-dict-lookup --json --all ephemeral
-dict-lookup --color never run > run.txt
-printf 'hello\nworld\n' | dict-lookup
+dictionary serendipity
+dictionary "ice cream"
+dictionary ran
+dictionary "don't"
+dictionary --all run
+dictionary --json --all ephemeral
+dictionary --color never run > run.txt
+printf 'hello\nworld\n' | dictionary
 ```
 
 If no entry is found, close spellings are suggested and the exit status is `1`.
@@ -85,17 +83,17 @@ A successful lookup exits `0`.
 **Requirements:** Rust 1.88+ and `git`.
 
 ```bash
-cargo install --git https://github.com/batusaribay/dict-lookup.git --locked
+cargo install --git https://github.com/batusaribay/dictionary.git --locked
 ```
 
 ## Uninstall
 
 ```bash
-cargo uninstall dict-lookup
+cargo uninstall dictionary
 ```
 
 ## License
 
-The `dict-lookup` code is licensed under the [MIT License](LICENSE). The bundled
+The `dictionary` code is licensed under the [MIT License](LICENSE). The bundled
 WordNet 3.0 database has its own license, included at
 [`assets/wordnet/LICENSE`](assets/wordnet/LICENSE).

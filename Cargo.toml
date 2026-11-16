@@ -1,18 +1,18 @@
 [package]
-name = "dict-lookup"
+name = "dictionary"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.88"
 description = "An offline dictionary in the terminal"
 license = "MIT"
-repository = "https://github.com/batusaribay/dict-lookup"
-homepage = "https://github.com/batusaribay/dict-lookup"
+repository = "https://github.com/batusaribay/dictionary"
+homepage = "https://github.com/batusaribay/dictionary"
 readme = "README.md"
 keywords = ["dictionary", "cli", "offline", "wordnet"]
 categories = ["command-line-utilities"]
 
 [[bin]]
-name = "dict-lookup"
+name = "dictionary"
 path = "src/main.rs"
 
 [dependencies]

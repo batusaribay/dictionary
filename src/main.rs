@@ -23,7 +23,7 @@ enum ColorMode {
 
 #[derive(Debug, Parser)]
 #[command(
-    name = "dict-lookup",
+    name = "dictionary",
     version,
     color = clap::ColorChoice::Never,
     about = "An offline dictionary in the terminal"
@@ -87,14 +87,14 @@ fn main() -> ExitCode {
         None => match read_words_from_stdin() {
             Ok(words) => words,
             Err(error) => {
-                eprintln!("dict-lookup: could not read stdin: {error}");
+                eprintln!("dictionary: could not read stdin: {error}");
                 return ExitCode::from(2);
             }
         },
     };
 
     if words.is_empty() {
-        eprintln!("dict-lookup: no input. Try `dict-lookup --help`.");
+        eprintln!("dictionary: no input. Try `dictionary --help`.");
         return ExitCode::from(2);
     }
 
@@ -196,7 +196,7 @@ fn lookup_json(lookup: &Lookup) -> serde_json::Value {
 }
 
 fn print_license() {
-    println!("dict-lookup\n");
+    println!("dictionary\n");
     print!("{PROJECT_LICENSE}");
     if !PROJECT_LICENSE.ends_with('\n') {
         println!();

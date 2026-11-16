@@ -1,9 +1,9 @@
-$ dict-lookup serendipity
+$ dictionary serendipity
 ## serendipity
 .. noun
 1. good luck in making unexpected and fortunate discoveries
 
-$ dict-lookup run --limit 2
+$ dictionary run --limit 2
 ## run
 .. verb
 1. move fast by using one's feet, with one foot off the ground at any given time
