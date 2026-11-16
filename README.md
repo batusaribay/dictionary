@@ -80,7 +80,7 @@ printf 'hello\nworld\n' | dict-lookup
 If no entry is found, close spellings are suggested and the exit status is `1`.
 A successful lookup exits `0`.
 
-## Installation
+## Install
 
 **Requirements:** Rust 1.88+ and `git`.
 
