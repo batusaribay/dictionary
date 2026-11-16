@@ -1,6 +1,6 @@
 # dictionary
 
-An offline dictionary in the terminal.
+A Rust CLI dictionary for offline lookups.
 
 ![dictionary in a terminal](preview.png)
 
