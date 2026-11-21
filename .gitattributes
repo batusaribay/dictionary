@@ -2,6 +2,5 @@
 assets/wordnet/*.gz binary
 
 # Non-source files and the generated lockfile.
-preview.txt linguist-documentation
 Cargo.lock linguist-generated
 preview.png binary

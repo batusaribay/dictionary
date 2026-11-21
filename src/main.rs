@@ -18,7 +18,7 @@ const DEFAULT_LIMIT: usize = 5;
     name = "dictionary",
     version,
     color = clap::ColorChoice::Never,
-    about = "A Rust CLI dictionary for offline lookups"
+    about = "A Rust CLI for offline dictionary lookups"
 )]
 struct Cli {
     /// Word or phrase to look up
