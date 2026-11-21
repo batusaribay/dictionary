@@ -1,3 +1,4 @@
+use crate::theme::{Role, Theme};
 use crate::wordnet::Lookup;
 
 pub const DEFAULT_EXAMPLE_LIMIT: usize = 2;
@@ -5,29 +6,31 @@ pub const DEFAULT_EXAMPLE_LIMIT: usize = 2;
 pub struct RenderOptions {
     pub limit: Option<usize>,
     pub width: usize,
+    pub theme: Theme,
 }
 
 impl RenderOptions {
-    pub fn new(limit: Option<usize>) -> Self {
+    pub fn new(limit: Option<usize>, theme: Theme) -> Self {
         Self {
             limit,
             width: terminal_width().clamp(48, 100),
+            theme,
         }
     }
 }
 
 pub fn render_lookup(lookup: &Lookup, options: &RenderOptions) -> String {
     if !lookup.found {
-        return render_not_found(lookup);
+        return render_not_found(lookup, options.theme);
     }
 
     let head = lookup.matched.as_deref().unwrap_or(&lookup.query);
     let mut output = String::new();
-    output.push_str(head);
+    output.push_str(&options.theme.paint(Role::Heading, head));
 
     if let Some(from) = &lookup.resolved_from {
         output.push_str("  ");
-        output.push_str(&format!("(from {from})"));
+        output.push_str(&options.theme.paint(Role::Muted, &format!("(from {from})")));
     }
     output.push('\n');
 
@@ -39,7 +42,7 @@ pub fn render_lookup(lookup: &Lookup, options: &RenderOptions) -> String {
         first_group = false;
 
         output.push_str("  ");
-        output.push_str(group.part_of_speech);
+        output.push_str(&options.theme.paint(Role::Muted, group.part_of_speech));
         output.push('\n');
 
         let shown = match options.limit {
@@ -61,10 +64,13 @@ pub fn render_lookup(lookup: &Lookup, options: &RenderOptions) -> String {
         if shown < group.senses.len() {
             let omitted = group.senses.len() - shown;
             output.push_str("      ");
-            output.push_str(&format!(
-                "… {omitted} more {} sense{} · use --all",
-                group.part_of_speech,
-                if omitted == 1 { "" } else { "s" }
+            output.push_str(&options.theme.paint(
+                Role::Muted,
+                &format!(
+                    "… {omitted} more {} sense{} · use --all",
+                    group.part_of_speech,
+                    if omitted == 1 { "" } else { "s" }
+                ),
             ));
             output.push('\n');
         }
@@ -88,7 +94,7 @@ fn render_sense(
     for (line_index, line) in textwrap::wrap(definition, available).iter().enumerate() {
         if line_index == 0 {
             output.push_str("    ");
-            output.push_str(&number);
+            output.push_str(&options.theme.paint(Role::Bold, &number));
             output.push(' ');
         } else {
             output.push_str(&" ".repeat(hanging));
@@ -103,7 +109,14 @@ fn render_sense(
         DEFAULT_EXAMPLE_LIMIT
     };
     for example in examples.iter().take(example_limit) {
-        push_wrapped(output, &format!("“{example}”"), 6, options.width);
+        push_wrapped(
+            output,
+            &format!("“{example}”"),
+            6,
+            options.width,
+            options.theme,
+            Role::Muted,
+        );
     }
 
     if !synonyms.is_empty() {
@@ -114,7 +127,7 @@ fn render_sense(
         for (line_index, line) in textwrap::wrap(&joined, available).iter().enumerate() {
             if line_index == 0 {
                 output.push_str(&" ".repeat(indent));
-                output.push_str(label);
+                output.push_str(&options.theme.paint(Role::Muted, label));
             } else {
                 output.push_str(&" ".repeat(indent + label.len()));
             }
@@ -124,28 +137,37 @@ fn render_sense(
     }
 }
 
-fn push_wrapped(output: &mut String, text: &str, indent: usize, width: usize) {
+fn push_wrapped(
+    output: &mut String,
+    text: &str,
+    indent: usize,
+    width: usize,
+    theme: Theme,
+    role: Role,
+) {
     let available = width.saturating_sub(indent).max(20);
     for line in textwrap::wrap(text, available) {
         output.push_str(&" ".repeat(indent));
-        output.push_str(&line);
+        output.push_str(&theme.paint(role, &line));
         output.push('\n');
     }
 }
 
-fn render_not_found(lookup: &Lookup) -> String {
+fn render_not_found(lookup: &Lookup, theme: Theme) -> String {
     let query = lookup.query.trim();
     let query = if query.is_empty() { "(nothing)" } else { query };
 
     let mut output = String::new();
-    output.push_str(&format!("No entry for “{query}”."));
-    output.push('\n');
+    output.push_str("No entry for ");
+    output.push_str(&theme.paint(Role::Bold, &format!("“{query}”")));
+    output.push_str(".\n");
 
     if !lookup.suggestions.is_empty() {
         output.push('\n');
-        output.push_str(&format!(
-            "  Did you mean: {}",
-            lookup.suggestions.join(", ")
+        output.push_str("  ");
+        output.push_str(&theme.paint(
+            Role::Muted,
+            &format!("Did you mean: {}", lookup.suggestions.join(", ")),
         ));
         output.push('\n');
     }
@@ -196,6 +218,7 @@ mod tests {
         let options = RenderOptions {
             limit: Some(1),
             width: 60,
+            theme: Theme::plain(),
         };
         let rendered = render_lookup(&sample_lookup(), &options);
         assert!(rendered.starts_with("test\n  noun\n    1. a procedure"));
@@ -203,6 +226,19 @@ mod tests {
         assert!(rendered.contains("synonyms: trial, check"));
         assert!(rendered.contains("1 more noun sense"));
         assert!(!rendered.contains("\x1b["));
+    }
+
+    #[test]
+    fn renders_semantic_roles_on_the_terminal_palette() {
+        let options = RenderOptions {
+            limit: Some(1),
+            width: 60,
+            theme: Theme::always(),
+        };
+        let rendered = render_lookup(&sample_lookup(), &options);
+        assert!(rendered.contains("\x1b[1;36mtest\x1b[0m"));
+        assert!(rendered.contains("\x1b[2mnoun\x1b[0m"));
+        assert!(rendered.contains("\x1b[1m1.\x1b[0m"));
     }
 
     #[test]
@@ -218,6 +254,7 @@ mod tests {
         let options = RenderOptions {
             limit: None,
             width: 80,
+            theme: Theme::plain(),
         };
         let rendered = render_lookup(&lookup, &options);
         assert!(rendered.contains("No entry for “serendipitty”."));

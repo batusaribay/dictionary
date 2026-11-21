@@ -1,4 +1,5 @@
 mod render;
+mod theme;
 mod wordnet;
 
 use std::io::{self, IsTerminal, Read};
@@ -7,6 +8,7 @@ use std::process::ExitCode;
 use clap::{CommandFactory, Parser};
 use render::{DEFAULT_EXAMPLE_LIMIT, RenderOptions, render_lookup};
 use serde_json::json;
+use theme::{ColorMode, Theme};
 use wordnet::{Lookup, WordNet};
 
 const PROJECT_LICENSE: &str = include_str!("../LICENSE");
@@ -45,6 +47,10 @@ struct Cli {
     /// Print license information and exit
     #[arg(long)]
     license: bool,
+
+    /// Color output: auto, always, or never
+    #[arg(long, value_enum, default_value = "auto", value_name = "WHEN")]
+    color: ColorMode,
 }
 
 fn main() -> ExitCode {
@@ -60,7 +66,7 @@ fn main() -> ExitCode {
     } else {
         Some(cli.limit.unwrap_or(DEFAULT_LIMIT))
     };
-    let options = RenderOptions::new(limit);
+    let options = RenderOptions::new(limit, Theme::from_env(cli.color));
     let dictionary = WordNet::new();
 
     if cli.word.is_none() && io::stdin().is_terminal() {

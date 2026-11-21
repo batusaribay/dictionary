@@ -38,12 +38,13 @@ Arguments:
   [WORD]  Word or phrase to look up
 
 Options:
-  -a, --all        Show every sense and example
-  -n, --limit <N>  Maximum senses per part of speech (default: 5)
-      --json       Print JSON instead of formatted text
-      --license    Print license information and exit
-  -h, --help       Print help
-  -V, --version    Print version
+  -a, --all           Show every sense and example instead of the first 5 per part of speech
+  -n, --limit <N>     Maximum senses per part of speech (default: 5)
+      --json          Print JSON instead of formatted text (respects --limit)
+      --license       Print license information and exit
+      --color <WHEN>  Color output: auto, always, or never [default: auto]
+  -h, --help          Print help
+  -V, --version       Print version
 ```
 
 Typical calls:
@@ -61,6 +62,11 @@ printf 'hello\nworld\n' | dictionary
 Text output shows five senses per part of speech and two examples per sense.
 `--all` removes both limits, and `--json` respects `--limit`. When stdin is not
 a terminal, each non-empty line is one lookup, so word lists can be piped in.
+
+Color uses the terminal palette and ANSI attributes only. Body text inherits
+the terminal foreground, while the headword, part of speech, numbers, examples,
+and synonyms use semantic roles. `--color never`, `NO_COLOR`, `CLICOLOR=0`,
+`TERM=dumb`, and non-terminal output all disable it. JSON is never colored.
 
 A missing entry prints close spellings and exits `1`. A successful lookup exits
 `0`. The code is MIT; WordNet 3.0 has its own license, included at
