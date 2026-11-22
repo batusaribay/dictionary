@@ -74,7 +74,7 @@ fn main() -> ExitCode {
         let mut command = Cli::command();
         let _ = command.print_help();
         println!();
-        return ExitCode::from(2);
+        return ExitCode::SUCCESS;
     }
 
     let words = match cli.word {
