@@ -20,6 +20,7 @@ const DEFAULT_LIMIT: usize = 5;
     name = "dictionary",
     version,
     color = clap::ColorChoice::Never,
+    styles = clap::builder::Styles::plain(),
     about = "A Rust CLI for offline dictionary lookups"
 )]
 struct Cli {
