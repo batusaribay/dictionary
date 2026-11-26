@@ -549,7 +549,8 @@ fn parse_synset(line: &str) -> Option<Synset> {
     }
 
     let word_count = usize::from_str_radix(fields[3], 16).ok()?;
-    if fields.len() < 4 + word_count * 2 {
+    let required_fields = word_count.checked_mul(2)?.checked_add(4)?;
+    if fields.len() < required_fields {
         return None;
     }
 
@@ -826,6 +827,12 @@ mod tests {
             "good luck in making unexpected and fortunate discoveries"
         );
         assert!(synset.examples.is_empty());
+    }
+
+    #[test]
+    fn rejects_synsets_with_overflowing_word_counts() {
+        let line = "00000000 00 n ffffffffffffffff word 0 | definition";
+        assert!(parse_synset(line).is_none());
     }
 
     #[test]

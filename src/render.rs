@@ -156,6 +156,16 @@ fn push_wrapped(
 fn render_not_found(lookup: &Lookup, theme: Theme) -> String {
     let query = lookup.query.trim();
     let query = if query.is_empty() { "(nothing)" } else { query };
+    let query: String = query
+        .chars()
+        .map(|character| {
+            if character.is_control() {
+                ' '
+            } else {
+                character
+            }
+        })
+        .collect();
 
     let mut output = String::new();
     output.push_str("No entry for ");
@@ -259,5 +269,25 @@ mod tests {
         let rendered = render_lookup(&lookup, &options);
         assert!(rendered.contains("No entry for “serendipitty”."));
         assert!(rendered.contains("Did you mean: serendipity"));
+    }
+
+    #[test]
+    fn strips_terminal_controls_from_missing_queries() {
+        let lookup = Lookup {
+            query: "missing\u{1b}[31m\nword".to_string(),
+            found: false,
+            matched: None,
+            resolved_from: None,
+            groups: Vec::new(),
+            suggestions: Vec::new(),
+        };
+        let options = RenderOptions {
+            limit: None,
+            width: 80,
+            theme: Theme::plain(),
+        };
+        let rendered = render_lookup(&lookup, &options);
+        assert!(!rendered.contains('\u{1b}'));
+        assert!(rendered.contains("No entry for “missing [31m word”."));
     }
 }

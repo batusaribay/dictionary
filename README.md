@@ -57,18 +57,13 @@ printf 'hello\nworld\n' | dictionary
 
 ## Notes
 
-Text output shows five senses per part of speech and two examples per sense.
-`--all` removes both limits, and `--json` respects `--limit`. When stdin is not
-a terminal, each non-empty line is one lookup, so word lists can be piped in.
+When stdin is not a terminal, each non-empty line is one lookup, so word lists
+can be piped in.
 
-Color uses the terminal palette and ANSI attributes only. Body text inherits
-the terminal foreground, while the headword, part of speech, numbers, examples,
-and synonyms use semantic roles. `--color never`, `NO_COLOR`, `CLICOLOR=0`,
-`TERM=dumb`, and non-terminal output all disable it. JSON is never colored.
+## Config
 
-A missing entry prints close spellings and exits `1`. A successful lookup exits
-`0`. The code is MIT; WordNet 3.0 has its own license, included at
-`assets/wordnet/LICENSE` and printed by `--license`.
+Reads `~/.config/dictionary/config.toml` if present. Flags override the file;
+defaults apply otherwise.
 
 ## Install
 

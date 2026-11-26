@@ -1,8 +1,9 @@
+mod config;
 mod render;
 mod theme;
 mod wordnet;
 
-use std::io::{self, IsTerminal, Read};
+use std::io::{self, IsTerminal, Read, Write};
 use std::process::ExitCode;
 
 use clap::{CommandFactory, Parser};
@@ -58,24 +59,38 @@ fn main() -> ExitCode {
     let cli = Cli::parse();
 
     if cli.license {
-        print_license();
-        return ExitCode::SUCCESS;
+        return match print_license() {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(error) => output_error(error),
+        };
     }
-
-    let limit = if cli.all {
-        None
-    } else {
-        Some(cli.limit.unwrap_or(DEFAULT_LIMIT))
-    };
-    let options = RenderOptions::new(limit, Theme::from_env(cli.color));
-    let dictionary = WordNet::new();
 
     if cli.word.is_none() && io::stdin().is_terminal() {
         let mut command = Cli::command();
-        let _ = command.print_help();
-        println!();
-        return ExitCode::SUCCESS;
+        let result = command.print_help().and_then(|()| {
+            let mut stdout = io::stdout().lock();
+            writeln!(stdout)
+        });
+        return match result {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(error) => output_error(error),
+        };
     }
+
+    let config = match config::load() {
+        Ok(config) => config,
+        Err(error) => {
+            eprintln!("dictionary: {error}");
+            return ExitCode::from(2);
+        }
+    };
+    let limit = if cli.all {
+        None
+    } else {
+        Some(cli.limit.or(config.limit).unwrap_or(DEFAULT_LIMIT))
+    };
+    let options = RenderOptions::new(limit, Theme::from_env(cli.color));
+    let dictionary = WordNet::new();
 
     let words = match cli.word {
         Some(word) => vec![word],
@@ -110,18 +125,23 @@ fn main() -> ExitCode {
         } else {
             serde_json::Value::Array(results)
         };
-        println!(
-            "{}",
-            serde_json::to_string_pretty(&value).expect("JSON serialization failed")
-        );
+        let mut output = serde_json::to_string_pretty(&value).expect("JSON serialization failed");
+        output.push('\n');
+        if let Err(error) = write_output(&output) {
+            return output_error(error);
+        }
     } else {
         for (index, word) in words.iter().enumerate() {
-            if index > 0 {
-                println!();
+            if index > 0
+                && let Err(error) = write_output("\n")
+            {
+                return output_error(error);
             }
             let lookup = dictionary.lookup(word);
             all_found &= lookup.found;
-            print!("{}", render_lookup(&lookup, &options));
+            if let Err(error) = write_output(&render_lookup(&lookup, &options)) {
+                return output_error(error);
+            }
         }
     }
 
@@ -171,15 +191,35 @@ fn lookup_json(lookup: &Lookup) -> serde_json::Value {
     serde_json::to_value(lookup).expect("lookup should serialize")
 }
 
-fn print_license() {
-    println!("dictionary\n");
-    print!("{PROJECT_LICENSE}");
+fn write_output(output: &str) -> io::Result<()> {
+    let mut stdout = io::stdout().lock();
+    stdout.write_all(output.as_bytes())?;
+    stdout.flush()
+}
+
+fn output_error(error: io::Error) -> ExitCode {
+    if error.kind() == io::ErrorKind::BrokenPipe {
+        ExitCode::SUCCESS
+    } else {
+        eprintln!("dictionary: could not write stdout: {error}");
+        ExitCode::from(2)
+    }
+}
+
+fn print_license() -> io::Result<()> {
+    let mut stdout = io::stdout().lock();
+    writeln!(stdout, "dictionary\n")?;
+    write!(stdout, "{PROJECT_LICENSE}")?;
     if !PROJECT_LICENSE.ends_with('\n') {
-        println!();
+        writeln!(stdout)?;
     }
-    println!("\nDictionary data: WordNet 3.0, Princeton University\n");
-    print!("{WORDNET_LICENSE}");
+    writeln!(
+        stdout,
+        "\nDictionary data: WordNet 3.0, Princeton University\n"
+    )?;
+    write!(stdout, "{WORDNET_LICENSE}")?;
     if !WORDNET_LICENSE.ends_with('\n') {
-        println!();
+        writeln!(stdout)?;
     }
+    stdout.flush()
 }
