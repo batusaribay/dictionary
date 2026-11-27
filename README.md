@@ -62,8 +62,11 @@ can be piped in.
 
 ## Config
 
-Reads `~/.config/dictionary/config.toml` if present. Flags override the file;
-defaults apply otherwise.
+Optional. Reads `~/.config/dictionary/config.toml` if present. Flags override the file; defaults apply otherwise.
+
+```toml
+limit = 5
+```
 
 ## Install
 
